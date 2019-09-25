@@ -53,7 +53,7 @@ def Generator():
     upsample(128, 4), # (bs, 64, 64, 256)
     upsample(64, 4), # (bs, 128, 128, 128)
   ]
-
+    
   initializer = tf.random_normal_initializer(0., 0.02)
   last = tf.keras.layers.Conv2DTranspose(OUTPUT_CHANNELS, 4,
                                          strides=2,

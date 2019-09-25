@@ -4,6 +4,7 @@ from metrics import *
 import time
 import matplotlib.pyplot as plt
 import numpy as np
+import cv2
 EPOCHS = 100
 
 
@@ -16,10 +17,16 @@ def generate_images(model, test_input, tar,epoch):
     prediction = model(test_input, training=True)
     plt.figure(figsize=(15,15))
 
-    real_output = np.concatenate((tar[0],test_input[0]),axis=2)
-    gen_output = np.concatenate((tar[0],prediction[0]),axis=2)
+    print("Test input shape:",test_input.shape)
+    print("Target shape:",tar.shape)
+    real_output = np.concatenate((test_input[0],tar[0]),axis=2)
+    gen_output = np.concatenate((test_input[0],prediction[0]),axis=2)
+
+
 
     #display_list = [test_input[0], tar[0], prediction[0]]
+
+
     display_list = [real_output,gen_output]
 
     print("GENERATED VALUES: Min:{} Max:{}".format(np.amin(display_list[1]),np.amax(display_list[1])))
@@ -32,6 +39,7 @@ def generate_images(model, test_input, tar,epoch):
         plt.imshow(display_list[i])
         plt.axis('off')
     plt.savefig('image_at_epoch_{:04d}.png'.format(epoch))
+    
     #plt.show()
 
 
