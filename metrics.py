@@ -2,12 +2,12 @@ import tensorflow as tf
 import os
 
 
-LAMBDA = 100
+LAMBDA = 300
 
 loss_metric = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 generator_optimizer = tf.keras.optimizers.Adam(2e-4,beta_1=0.5)
-discriminator_optimizer = tf.keras.optimizers.Adam(2e-4,beta_1=0.5)
+discriminator_optimizer = tf.keras.optimizers.Adam(2e-3,beta_1=0.5)
 
 checkpoint_dir = './checkpoints'
 checkpoint_prefix = os.path.join(checkpoint_dir,'cp')

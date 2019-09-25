@@ -1,5 +1,5 @@
 import tensorflow as tf
-OUTPUT_CHANNELS = 3
+OUTPUT_CHANNELS = 2
 
 def downsample(filters,size,batchnorm = True):
     init = tf.random_normal_initializer(0.,0.02)
@@ -63,7 +63,7 @@ def Generator():
 
   concat = tf.keras.layers.Concatenate()
 
-  inputs = tf.keras.layers.Input(shape=[None,None,3])
+  inputs = tf.keras.layers.Input(shape=[None,None,1])
   x = inputs
 
   # Downsampling through the model
@@ -88,8 +88,8 @@ def Generator():
 def Discriminator():
   initializer = tf.random_normal_initializer(0., 0.02)
 
-  inp = tf.keras.layers.Input(shape=[None, None, 3], name='input_image')
-  tar = tf.keras.layers.Input(shape=[None, None, 3], name='target_image')
+  inp = tf.keras.layers.Input(shape=[None, None, 2], name='input_image')
+  tar = tf.keras.layers.Input(shape=[None, None, 1], name='target_image')
 
   x = tf.keras.layers.concatenate([inp, tar]) # (bs, 256, 256, channels*2)
 
