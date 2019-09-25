@@ -12,6 +12,8 @@ discriminator_optimizer = tf.keras.optimizers.Adam(2e-4,beta_1=0.5)
 checkpoint_dir = './checkpoints'
 checkpoint_prefix = os.path.join(checkpoint_dir,'cp')
 
+# checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,discriminator_optimizer=discriminator_optimizer,generator=,discriminator=)
+
 
 def disc_loss(y_true,y_pred):
     real_loss = loss_metric(tf.ones_like(y_true),y_true)
