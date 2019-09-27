@@ -3,13 +3,20 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import tensorflow as tf
 tf.enable_eager_execution()
 import os
+import configparser
 import time
 import matplotlib.pyplot as plt
 import numpy as np
 
 import models
 import train
+import settings
 from rgb2yuv import *
+
+
+settings.init()
+
+
 
 
 
@@ -52,11 +59,12 @@ def load(image_file):
     return input_image,real_image
 
 
-train_dataset = tf.data.Dataset.list_files(PATH+'train/*/*.jpg')
+#train_dataset = tf.data.Dataset.list_files(PATH+'train/*/*.jpg')
+train_dataset = tf.data.Dataset.list_files(settings.config['paths']['train_dataset'])
 train_dataset = train_dataset.shuffle(BUFFER_SIZE)
 train_dataset = train_dataset.map(load,num_parallel_calls=tf.data.experimental.AUTOTUNE)
 train_dataset = train_dataset.batch(8)
 
 
 
-train.fit(train_dataset,100)
+train.fit(train_dataset,int(settings.config['training']['epochs']))

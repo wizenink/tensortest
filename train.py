@@ -5,6 +5,7 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 import cv2
+import settings
 EPOCHS = 100
 
 
@@ -57,7 +58,7 @@ def generate_images(model, test_input, tar,epoch):
                 plt.imshow(display_list[x])
             plt.axis('off')
             x = x+1
-    plt.savefig('results/image_at_epoch_{:04d}.png'.format(epoch))
+    plt.savefig(settings.config['paths']['results']+'image_at_epoch_{:04d}.png'.format(epoch))
     #cv2.imwrite('result_{:04d}.png'.format(epoch),cv2.cvtColor(gen_output,cv2.COLOR_YUV2BGR))
     
     #plt.show()
@@ -66,7 +67,7 @@ def generate_plots(g_loss_mean,d_loss_mean,epochs):
     plt.figure()
     plt.plot(g_loss_mean,epochs,'g',label='Generator loss')
     plt.plot(d_loss_mean,epochs,'b',label='Discriminator loss')
-    plt.savefig('plots/losses.png')
+    plt.savefig(settings.config['paths']['plots']+'losses.png')
 @tf.function
 def train_step(input_image,target):
 
