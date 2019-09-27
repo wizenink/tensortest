@@ -5,10 +5,11 @@ tf.enable_eager_execution()
 import os
 import time
 import matplotlib.pyplot as plt
-
+import numpy as np
 
 import models
 import train
+from rgb2yuv import *
 
 
 
@@ -32,23 +33,26 @@ IMG_HEIGHT = 256
 def load(image_file):
     image = tf.io.read_file(image_file)
     image = tf.image.decode_jpeg(image)
-
+    image = tf.cast(image,tf.float32)
+    image = tf.divide(image,255.0)
+    image = tf.image.rgb_to_yuv(image)  
     image = tf.reshape(image,(IMG_WIDTH,IMG_HEIGHT,3))
-
+    #channels = tf.unstack(image,axis=-1)
+    #image = tf.stack([channels[2],channels[1],channels[0]],axis=-1)
     input_image = tf.expand_dims(image[:,:,0],-1)
     real_image = image[:,:,1:3]
 
+    #input_image = tf.cast(input_image,tf.float32)
+    #input_image = tf.divide(input_image,255.0)
+    #real_image = tf.cast(real_image,tf.float32)
+    #real_image = tf.divide(real_image,255.0)
     print(input_image.shape)
     print(real_image.shape)
-    input_image = tf.cast(input_image,tf.float32)
-    input_image = tf.divide(input_image,255.0)
-    real_image = tf.cast(real_image,tf.float32)
-    real_image = tf.divide(real_image,255.0)
-
+    
     return input_image,real_image
 
 
-train_dataset = tf.data.Dataset.list_files(PATH+'train/berry/*.jpg')
+train_dataset = tf.data.Dataset.list_files(PATH+'train/*/*.jpg')
 train_dataset = train_dataset.shuffle(BUFFER_SIZE)
 train_dataset = train_dataset.map(load,num_parallel_calls=tf.data.experimental.AUTOTUNE)
 train_dataset = train_dataset.batch(8)

@@ -50,8 +50,8 @@ def Generator():
     upsample(512, 4, dropout=True), # (bs, 8, 8, 1024)
     upsample(512, 4), # (bs, 16, 16, 1024)
     upsample(256, 4), # (bs, 32, 32, 512)
-    upsample(128, 4), # (bs, 64, 64, 256)
-    upsample(64, 4), # (bs, 128, 128, 128)
+    upsample(128, 11), # (bs, 64, 64, 256)
+    upsample(64, 11), # (bs, 128, 128, 128)
   ]
     
   initializer = tf.random_normal_initializer(0., 0.02)

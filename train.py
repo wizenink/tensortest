@@ -20,29 +20,53 @@ def generate_images(model, test_input, tar,epoch):
     print("Test input shape:",test_input.shape)
     print("Target shape:",tar.shape)
     real_output = np.concatenate((test_input[0],tar[0]),axis=2)
+    #real_output = real_output[...,::-1]
+
     gen_output = np.concatenate((test_input[0],prediction[0]),axis=2)
+    #gen_output = gen_output[...,::-1]
 
 
 
     #display_list = [test_input[0], tar[0], prediction[0]]
+    
+    display_list = [
+        real_output[:,:,0],
+        gen_output[:,:,0],
+        real_output[:,:,1],
+        gen_output[:,:,1],
+        real_output[:,:,2],
+        gen_output[:,:,2],
+        tf.image.yuv_to_rgb(real_output),
+        tf.image.yuv_to_rgb(gen_output) 
+    ]
 
-
-    display_list = [real_output,gen_output]
+    #display_list = [real_output,gen_output]
 
     print("GENERATED VALUES: Min:{} Max:{}".format(np.amin(display_list[1]),np.amax(display_list[1])))
-    title = ['Ground Truth', 'Predicted', 'Predicted Image']
-    
+    title = ['Ground Truth','Predicted']
+    x = 0
     for i in range(2):
-        plt.subplot(1, 2, i+1)
-        plt.title(title[i])
-        # getting the pixel values between [0, 1] to plot it.
-        plt.imshow(display_list[i])
-        plt.axis('off')
-    plt.savefig('image_at_epoch_{:04d}.png'.format(epoch))
+        for j in range(4):
+            print("adding image to subplot: ",((j+i*4)+1))
+            plt.subplot(4, 2,(j+i*4)+1)
+            plt.title(title[x%2])
+            # getting the pixel values between [0, 1] to plot it.
+            if(len(display_list[x].shape) == 2):
+                plt.imshow(display_list[x],cmap='gray')
+            else:
+                plt.imshow(display_list[x])
+            plt.axis('off')
+            x = x+1
+    plt.savefig('results/image_at_epoch_{:04d}.png'.format(epoch))
+    #cv2.imwrite('result_{:04d}.png'.format(epoch),cv2.cvtColor(gen_output,cv2.COLOR_YUV2BGR))
     
     #plt.show()
 
-
+def generate_plots(g_loss_mean,d_loss_mean,epochs):
+    plt.figure()
+    plt.plot(g_loss_mean,epochs,'g',label='Generator loss')
+    plt.plot(d_loss_mean,epochs,'b',label='Discriminator loss')
+    plt.savefig('plots/losses.png')
 @tf.function
 def train_step(input_image,target):
 
@@ -64,6 +88,10 @@ def train_step(input_image,target):
 
 def fit(ds,epochs):
     checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,discriminator_optimizer=discriminator_optimizer,generator=generator,discriminator=discriminator)
+    
+    g_loss_mean = []
+    d_loss_mean = []
+    epochlist = []
     for epoch in range(epochs):
         start = time.time()
         g_losses = []
@@ -74,12 +102,18 @@ def fit(ds,epochs):
             d_losses.append(d_loss)
             print("G_loss={}   D_loss={}".format(g_loss,d_loss),end='\r')
         print("\n")
+
         for example_input, example_target in ds.take(1):
             generate_images(generator, example_input, example_target,epoch)
 
+
+        epochlist.append(epoch)
+        g_loss_mean.append(np.array(g_losses).mean())
+        d_loss_mean.append(np.array(d_losses).mean())
+        generate_plots(g_loss_mean,d_loss_mean,epochlist)
         
         if (epoch + 1) % 20 == 0:
             checkpoint.save(file_prefix=checkpoint_prefix)
         
-        print('Epoch[{}/{}] - {}'.format(epoch+1,epochs,time.time()-start))
+        print('Epoch[{}/{}] - {}s - G:{}  D:{}'.format(epoch+1,epochs,time.time()-start,g_loss_mean[epoch],d_loss_mean[epoch]))
 

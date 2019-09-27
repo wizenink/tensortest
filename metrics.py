@@ -3,6 +3,7 @@ import os
 
 
 LAMBDA = 300
+LAMBDA2 = 100
 
 loss_metric = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
@@ -28,7 +29,8 @@ def gen_loss(disc_pred,gen_pred,target):
     gan_loss = loss_metric(tf.ones_like(disc_pred),disc_pred)
 
     l1_loss = tf.reduce_mean(tf.abs(target-gen_pred))
+    l2_loss = tf.reduce_mean(tf.square(target-gen_pred))
 
-    total_loss = gan_loss + (LAMBDA * l1_loss)
+    total_loss = gan_loss + (LAMBDA * l1_loss + LAMBDA2 * l2_loss) 
 
     return total_loss
