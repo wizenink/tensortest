@@ -65,8 +65,8 @@ def generate_images(model, test_input, tar,epoch):
 
 def generate_plots(g_loss_mean,d_loss_mean,epochs):
     plt.figure()
-    plt.plot(g_loss_mean,epochs,'g',label='Generator loss')
-    plt.plot(d_loss_mean,epochs,'b',label='Discriminator loss')
+    plt.plot(epochs,g_loss_mean,'g',label='Generator loss')
+    plt.plot(epochs,d_loss_mean,'b',label='Discriminator loss')
     plt.savefig(settings.config['paths']['plots']+'losses.png')
 @tf.function
 def train_step(input_image,target):
@@ -87,13 +87,22 @@ def train_step(input_image,target):
         discriminator_optimizer.apply_gradients(zip(discriminator_gradients,discriminator.trainable_variables))
         return g_loss,d_loss
 
-def fit(ds,epochs):
+def fit(ds,tds,epochs):
+    start_epoch = 0
     checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,discriminator_optimizer=discriminator_optimizer,generator=generator,discriminator=discriminator)
     
+    manager = tf.train.CheckpointManager(checkpoint, './checkpoints', max_to_keep=3)
+    checkpoint.restore(manager.latest_checkpoint)
+    
+    if manager.latest_checkpoint:
+        print("Restored from {}".format(manager.latest_checkpoint))
+        start_epoch = int(settings.config['training']['start_epoch'])
+    else:
+        print("Initializing from scratch.")
     g_loss_mean = []
     d_loss_mean = []
     epochlist = []
-    for epoch in range(epochs):
+    for epoch in range(start_epoch,epochs):
         start = time.time()
         g_losses = []
         d_losses = []
@@ -104,7 +113,7 @@ def fit(ds,epochs):
             print("G_loss={}   D_loss={}".format(g_loss,d_loss),end='\r')
         print("\n")
 
-        for example_input, example_target in ds.take(1):
+        for example_input, example_target in tds.take(1):
             generate_images(generator, example_input, example_target,epoch)
 
 
@@ -113,8 +122,11 @@ def fit(ds,epochs):
         d_loss_mean.append(np.array(d_losses).mean())
         generate_plots(g_loss_mean,d_loss_mean,epochlist)
         
-        if (epoch + 1) % 20 == 0:
-            checkpoint.save(file_prefix=checkpoint_prefix)
+        if (epoch + 1) % 1 == 0:
+            savepath = manager.save()
+            #settings.config.set('training','start_epoch',str(epoch-1))
+            #settings.config.write('colorize.cfg')
+            print("Saved checkpoint on path: {}".format(savepath))
         
         print('Epoch[{}/{}] - {}s - G:{}  D:{}'.format(epoch+1,epochs,time.time()-start,g_loss_mean[epoch],d_loss_mean[epoch]))
 

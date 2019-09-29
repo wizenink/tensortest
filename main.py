@@ -63,8 +63,12 @@ def load(image_file):
 train_dataset = tf.data.Dataset.list_files(settings.config['paths']['train_dataset'])
 train_dataset = train_dataset.shuffle(BUFFER_SIZE)
 train_dataset = train_dataset.map(load,num_parallel_calls=tf.data.experimental.AUTOTUNE)
-train_dataset = train_dataset.batch(8)
+train_dataset = train_dataset.batch(int(settings.config['training']['batch_size']))
+
+test_dataset = tf.data.Dataset.list_files(settings.config['paths']['test_dataset'])
+test_dataset = test_dataset.shuffle(BUFFER_SIZE)
+test_dataset = test_dataset.map(load,num_parallel_calls=tf.data.experimental.AUTOTUNE)
+test_dataset = test_dataset.batch(int(settings.config['training']['batch_size']))
 
 
-
-train.fit(train_dataset,int(settings.config['training']['epochs']))
+train.fit(train_dataset,test_dataset,int(settings.config['training']['epochs']))
