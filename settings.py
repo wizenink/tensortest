@@ -11,3 +11,6 @@ def init():
     global config
     config = configparser.ConfigParser(interpolation=EnvInterpolation())
     config.read('colorize.cfg')
+
+
+    

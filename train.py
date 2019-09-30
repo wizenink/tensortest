@@ -9,14 +9,18 @@ import settings
 EPOCHS = 100
 
 
+
 def generate_images(model, test_input, tar,epoch):
     # the training=True is intentional here since
     # we want the batch statistics while running the model
     # on the test dataset. If we use training=False, we will get
     # the accumulated statistics learned from the training dataset
     # (which we don't want)
-    prediction = model(test_input, training=True)
+    noise = tf.random.uniform([8,256,256,1])
+    prediction = model([noise,test_input], training=True)
+    
     plt.figure(figsize=(15,15))
+
 
     print("Test input shape:",test_input.shape)
     print("Target shape:",tar.shape)
@@ -25,7 +29,6 @@ def generate_images(model, test_input, tar,epoch):
 
     gen_output = np.concatenate((test_input[0],prediction[0]),axis=2)
     #gen_output = gen_output[...,::-1]
-
 
 
     #display_list = [test_input[0], tar[0], prediction[0]]
@@ -44,13 +47,22 @@ def generate_images(model, test_input, tar,epoch):
     #display_list = [real_output,gen_output]
 
     print("GENERATED VALUES: Min:{} Max:{}".format(np.amin(display_list[1]),np.amax(display_list[1])))
-    title = ['Ground Truth','Predicted']
+    title = [
+        'Ground Truth Y',
+        'Generated Y',
+        'Ground Truth U',
+        'Generated U',
+        'Ground Truth V',
+        'Generated V',
+        'Ground Truth RGB',
+        'Generated RGB'
+        ]
     x = 0
     for i in range(2):
         for j in range(4):
             print("adding image to subplot: ",((j+i*4)+1))
             plt.subplot(4, 2,(j+i*4)+1)
-            plt.title(title[x%2])
+            plt.title(title[x])
             # getting the pixel values between [0, 1] to plot it.
             if(len(display_list[x].shape) == 2):
                 plt.imshow(display_list[x],cmap='gray')
@@ -59,6 +71,8 @@ def generate_images(model, test_input, tar,epoch):
             plt.axis('off')
             x = x+1
     plt.savefig(settings.config['paths']['results']+'image_at_epoch_{:04d}.png'.format(epoch))
+
+    return plt.imread(settings.config['paths']['results']+'image_at_epoch_{:04d}.png'.format(epoch))
     #cv2.imwrite('result_{:04d}.png'.format(epoch),cv2.cvtColor(gen_output,cv2.COLOR_YUV2BGR))
     
     #plt.show()
@@ -69,10 +83,10 @@ def generate_plots(g_loss_mean,d_loss_mean,epochs):
     plt.plot(epochs,d_loss_mean,'b',label='Discriminator loss')
     plt.savefig(settings.config['paths']['plots']+'losses.png')
 @tf.function
-def train_step(input_image,target):
+def train_step(noise,input_image,target,generator_optimizer,discriminator_optimizer):
 
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-        print("SHAPE:",input_image.shape)
+        
         gen_output = generator(input_image,training=True)
 
         disc_real = discriminator([input_image,target],training=True)
@@ -89,8 +103,13 @@ def train_step(input_image,target):
 
 def fit(ds,tds,epochs):
     start_epoch = 0
+    
+    generator_optimizer = tf.keras.optimizers.Adam(settings.config.getfloat('training','lr_generator'),settings.config.getfloat('training','beta1_generator'))
+    discriminator_optimizer = tf.keras.optimizers.Adam(settings.config.getfloat('training','lr_discriminator'),settings.config.getfloat('training','beta1_discriminator'))
+
     checkpoint = tf.train.Checkpoint(generator_optimizer=generator_optimizer,discriminator_optimizer=discriminator_optimizer,generator=generator,discriminator=discriminator)
     
+
     manager = tf.train.CheckpointManager(checkpoint, './checkpoints', max_to_keep=3)
     checkpoint.restore(manager.latest_checkpoint)
     
@@ -106,15 +125,26 @@ def fit(ds,tds,epochs):
         start = time.time()
         g_losses = []
         d_losses = []
+        avg_g_loss = tf.keras.metrics.Mean(name='g_loss',dtype=tf.float32)
+        avg_d_loss = tf.keras.metrics.Mean(name='d_loss',dtype=tf.float32)
         for input_image,target in ds:
-            g_loss,d_loss = train_step(input_image,target)
+            #noise = tf.random.uniform([settings.config.getint('training','batch_size'),256,256,1])
+            g_loss,d_loss = train_step(0,input_image,target,generator_optimizer,discriminator_optimizer)
+            avg_g_loss.update_state(g_loss)
+            avg_d_loss.update_state(d_loss)
+            if tf.equal(generator_optimizer.iterations % 10,0):
+                tf.summary.scalar('g_loss',avg_g_loss.result(),step=generator_optimizer.iterations)
+                tf.summary.scalar('d_loss',avg_d_loss.result(),step=discriminator_optimizer.iterations)
+                avg_g_loss.reset_states()
+                avg_d_loss.reset_states()
             g_losses.append(g_loss)
             d_losses.append(d_loss)
             print("G_loss={}   D_loss={}".format(g_loss,d_loss),end='\r')
         print("\n")
 
         for example_input, example_target in tds.take(1):
-            generate_images(generator, example_input, example_target,epoch)
+            image = generate_images(generator, example_input, example_target,epoch)
+            tf.summary.image("result_epoch{:04d}".format(epoch),tf.expand_dims(image,0))
 
 
         epochlist.append(epoch)

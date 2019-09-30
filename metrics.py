@@ -1,14 +1,13 @@
 import tensorflow as tf
 import os
-
+import settings
 
 LAMBDA = 300
 LAMBDA2 = 100
 
 loss_metric = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
-generator_optimizer = tf.keras.optimizers.Adam(2e-4,beta_1=0.5)
-discriminator_optimizer = tf.keras.optimizers.Adam(2e-3,beta_1=0.5)
+
 
 checkpoint_dir = './checkpoints'
 checkpoint_prefix = os.path.join(checkpoint_dir,'cp')
@@ -17,7 +16,13 @@ checkpoint_prefix = os.path.join(checkpoint_dir,'cp')
 
 
 def disc_loss(y_true,y_pred):
-    real_loss = loss_metric(tf.ones_like(y_true),y_true)
+    #real_loss = loss_metric(tf.ones_like(y_true),y_true)
+
+    #Perform 1-sided label smoothing
+    labels = (0.8-1.0) * tf.random.uniform(y_true.shape) + 1.0
+    real_loss = loss_metric(labels,y_true)
+
+
     pred_loss = loss_metric(tf.zeros_like(y_pred),y_pred)
 
     total_loss = real_loss + pred_loss
