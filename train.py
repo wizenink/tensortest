@@ -44,7 +44,6 @@ def generate_images(model, test_input, tar,epoch):
         tf.image.yuv_to_rgb(real_output),
         tf.image.yuv_to_rgb(gen_output) 
     ]
-
     #display_list = [real_output,gen_output]
 
     print("GENERATED VALUES: Min:{} Max:{}".format(np.amin(display_list[1]),np.amax(display_list[1])))
