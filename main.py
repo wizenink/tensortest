@@ -47,8 +47,8 @@ def load(image_file):
     image = tf.image.rgb_to_yuv(image)  
     image = tf.reshape(image,(IMG_WIDTH,IMG_HEIGHT,3))
 
-    image = tf.image.random_flip_left_right(image)
-    image = tf.image.random_flip_up_down(image)
+    #image = tf.image.random_flip_left_right(image)
+    #image = tf.image.random_flip_up_down(image)
     #channels = tf.unstack(image,axis=-1)
     #image = tf.stack([channels[2],channels[1],channels[0]],axis=-1)
     input_image = tf.expand_dims(image[:,:,0],-1)
@@ -75,10 +75,10 @@ test_dataset = tf.data.Dataset.list_files(settings.config['paths']['test_dataset
 test_dataset = test_dataset.map(load,num_parallel_calls=tf.data.experimental.AUTOTUNE)
 test_dataset = test_dataset.batch(settings.config.getint('training','batch_size'))
 
-writer = tf.summary.create_file_writer(settings.config.get('paths','tb_logs'))
+
+logdir = os.path.join(settings.config.get('paths','tb_logs'),settings.config.get('paths','log_tag'))
+writer = tf.summary.create_file_writer(logdir)
 writer.set_as_default()
 pr = cProfile.Profile()
-pr.enable()
+
 train.fit(train_dataset,test_dataset,settings.config.getint('training','epochs'))
-pr.disable()
-pr.print_stats()

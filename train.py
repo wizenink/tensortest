@@ -1,6 +1,7 @@
 import tensorflow as tf
 from models import *
 from metrics import *
+import os
 import time
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,7 +18,7 @@ def generate_images(model, test_input, tar,epoch):
     # the accumulated statistics learned from the training dataset
     # (which we don't want)
     noise = tf.random.uniform([8,256,256,1])
-    prediction = model([noise,test_input], training=True)
+    prediction = model(test_input, training=True)
     
     plt.figure(figsize=(15,15))
 
@@ -92,14 +93,15 @@ def train_step(noise,input_image,target,generator_optimizer,discriminator_optimi
         disc_real = discriminator([input_image,target],training=True)
         disc_gen = discriminator([input_image,gen_output],training=True)
         g_loss = gen_loss(disc_gen,gen_output,target)
-        d_loss = disc_loss(disc_real,disc_gen)
+        d_loss_fake,d_loss_real = disc_loss(disc_real,disc_gen)
 
         generator_gradients = gen_tape.gradient(g_loss,generator.trainable_variables) 
-
-        discriminator_gradients = disc_tape.gradient(d_loss,discriminator.trainable_variables)
+        discriminator_gradients = disc_tape.gradient(d_loss_fake+d_loss_real,discriminator.trainable_variables)
         generator_optimizer.apply_gradients(zip(generator_gradients,generator.trainable_variables))
         discriminator_optimizer.apply_gradients(zip(discriminator_gradients,discriminator.trainable_variables))
-        return g_loss,d_loss
+        tf.summary.histogram("generator gradients",generator_gradients[0],step=discriminator_optimizer.iterations)
+        tf.summary.histogram("discriminator_gradients",discriminator_gradients[0],step=discriminator_optimizer.iterations)
+        return g_loss,d_loss_fake,d_loss_real
 
 def fit(ds,tds,epochs):
     start_epoch = 0
@@ -126,33 +128,39 @@ def fit(ds,tds,epochs):
         g_losses = []
         d_losses = []
         avg_g_loss = tf.keras.metrics.Mean(name='g_loss',dtype=tf.float32)
-        avg_d_loss = tf.keras.metrics.Mean(name='d_loss',dtype=tf.float32)
+        avg_d_loss_real = tf.keras.metrics.Mean(name='d_loss_real',dtype=tf.float32)
+        avg_d_loss_fake = tf.keras.metrics.Mean(name='d_loss_fake',dtype=tf.float32)
+        #tf.summary.trace_on(graph=True,profiler=True)
         for input_image,target in ds:
             #noise = tf.random.uniform([settings.config.getint('training','batch_size'),256,256,1])
-            g_loss,d_loss = train_step(0,input_image,target,generator_optimizer,discriminator_optimizer)
+            
+            g_loss,d_loss_fake,d_loss_real = train_step(0,input_image,target,generator_optimizer,discriminator_optimizer)
             avg_g_loss.update_state(g_loss)
-            avg_d_loss.update_state(d_loss)
+            avg_d_loss_fake.update_state(d_loss_fake)
+            avg_d_loss_real.update_state(d_loss_real)
             if tf.equal(generator_optimizer.iterations % 10,0):
                 tf.summary.scalar('g_loss',avg_g_loss.result(),step=generator_optimizer.iterations)
-                tf.summary.scalar('d_loss',avg_d_loss.result(),step=discriminator_optimizer.iterations)
+                tf.summary.scalar('d_loss_fake',avg_d_loss_fake.result(),step=discriminator_optimizer.iterations)
+                tf.summary.scalar('d_loss_real',avg_d_loss_real.result(),step=discriminator_optimizer.iterations)
                 avg_g_loss.reset_states()
-                avg_d_loss.reset_states()
+                avg_d_loss_real.reset_states()
+                avg_d_loss_fake.reset_states()
             g_losses.append(g_loss)
-            d_losses.append(d_loss)
-            print("G_loss={}   D_loss={}".format(g_loss,d_loss),end='\r')
+            d_losses.append(d_loss_fake+d_loss_real)
+            print("G_loss={}   D_loss={}".format(g_loss,d_loss_fake+d_loss_real),end='\r')
         print("\n")
-
+        #tf.summary.trace_export(name='train_func',step=0,profiler_outdir=os.path.join(settings.config.get('paths','tb_logs'),settings.config.get('paths','log_tag')))
         for example_input, example_target in tds.take(1):
             image = generate_images(generator, example_input, example_target,epoch)
-            tf.summary.image("result_epoch{:04d}".format(epoch),tf.expand_dims(image,0))
-
-
+            tf.summary.image("result_epoch{:04d}".format(epoch),tf.expand_dims(image,0),step=epoch)
+        
+        tf.summary.scalar("epoch_time",time.time()-start,step=epoch)
         epochlist.append(epoch)
         g_loss_mean.append(np.array(g_losses).mean())
         d_loss_mean.append(np.array(d_losses).mean())
-        generate_plots(g_loss_mean,d_loss_mean,epochlist)
+        #generate_plots(g_loss_mean,d_loss_mean,epochlist)
         
-        if (epoch + 1) % 1 == 0:
+        if (epoch + 1) % 10 == 0:
             savepath = manager.save()
             #settings.config.set('training','start_epoch',str(epoch-1))
             #settings.config.write('colorize.cfg')
