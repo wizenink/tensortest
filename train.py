@@ -17,7 +17,7 @@ def generate_images(model, test_input, tar,epoch):
     # on the test dataset. If we use training=False, we will get
     # the accumulated statistics learned from the training dataset
     # (which we don't want)
-    noise = tf.random.uniform([8,256,256,1])
+    noise = tf.random.uniform([test_input.shape[0],256,256,1])
     prediction = model(test_input, training=True)
     
     plt.figure(figsize=(15,15))
@@ -131,9 +131,9 @@ def fit(ds,tds,epochs):
         avg_d_loss_fake = tf.keras.metrics.Mean(name='d_loss_fake',dtype=tf.float32)
         #tf.summary.trace_on(graph=True,profiler=True)
         for input_image,target in ds:
-            #noise = tf.random.uniform([settings.config.getint('training','batch_size'),256,256,1])
+            noise = tf.random.uniform([settings.config.getint('training','batch_size'),256,256,1])
             
-            g_loss,d_loss_fake,d_loss_real = train_step(0,input_image,target,generator_optimizer,discriminator_optimizer)
+            g_loss,d_loss_fake,d_loss_real = train_step(noise,input_image,target,generator_optimizer,discriminator_optimizer)
             avg_g_loss.update_state(g_loss)
             avg_d_loss_fake.update_state(d_loss_fake)
             avg_d_loss_real.update_state(d_loss_real)
