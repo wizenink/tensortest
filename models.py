@@ -1,5 +1,5 @@
 import tensorflow as tf
-OUTPUT_CHANNELS = 3
+OUTPUT_CHANNELS = 2
 
 def downsample(filters,size,batchnorm = True):
     init = tf.random_normal_initializer(0.,0.02)
@@ -30,68 +30,46 @@ def upsample(filters,size,dropout = False):
 
     return result
 
-
-
 def Generator():
-  down_stack = [
-    downsample(64, 4, batchnorm=False), # (bs, 128, 128, 64)
-    downsample(128, 4), # (bs, 64, 64, 128)
-    downsample(256, 4), # (bs, 32, 32, 256)
-    downsample(512, 4), # (bs, 16, 16, 512)
-    downsample(512, 4), # (bs, 8, 8, 512)
-    downsample(512, 4), # (bs, 4, 4, 512)
-    downsample(512, 4), # (bs, 2, 2, 512)
-    downsample(512, 4), # (bs, 1, 1, 512)
-  ]
+        '''
+        conditioning = Input(shape=(None,None,self.G_INPUT_CHANNELS))
+        input_layer = Input(shape=(None,None,1))
+        filters = 32
+        c1 = self.addConvStep(input_layer,filters,conditioning)
+        filters = 32
+        c2 = self.addConvStep(c1,filters,conditioning)
+        filters = 16
+        c3 = self.addConvStep(c2,filters,conditioning)
+        filters = 2
+        c4 = SeparableConv2D(filters,self.KERNEL_SIZE,padding='same',activation=customAct)(c3)
+        model = Model([input_layer,conditioning],c4)
+        print("--Generator--")
+        model.summary()
+        '''
+        conditioning = tf.keras.layers.Input(shape=(None, None, 1))
+        #noise = tf.keras.layers.Input(shape=(None,None,1))
+        #hid = tf.keras.layers.Concatenate()([noise,conditioning])
+        hid = tf.keras.layers.Conv2D(8, (3, 3), activation='relu', padding='same')(conditioning)
+        hid = tf.keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(hid)
+        hid = tf.keras.layers.Conv2D(32, (5, 5), activation='relu', padding='same')(hid)
+        hid = tf.keras.layers.Conv2D(32, (5, 5), activation='relu', padding='same')(hid)
+        hid = tf.keras.layers.Conv2D(32, (5, 5), activation='relu', padding='same')(hid)
+        hid =  tf.keras.layers.Conv2D(2, (11, 11), activation='tanh',padding='same')(hid)
+        model = tf.keras.Model(conditioning,hid)
+        
+        return model
 
-  up_stack = [
-    upsample(512, 4, dropout=True), # (bs, 2, 2, 1024)
-    upsample(512, 4, dropout=True), # (bs, 4, 4, 1024)
-    upsample(512, 4, dropout=True), # (bs, 8, 8, 1024)
-    upsample(512, 4), # (bs, 16, 16, 1024)
-    upsample(256, 4), # (bs, 32, 32, 512)
-    upsample(128, 4), # (bs, 64, 64, 256)
-    upsample(64, 4), # (bs, 128, 128, 128)
-  ]
-
-  initializer = tf.random_normal_initializer(0., 0.02)
-  last = tf.keras.layers.Conv2DTranspose(OUTPUT_CHANNELS, 4,
-                                         strides=2,
-                                         padding='same',
-                                         kernel_initializer=initializer,
-                                         activation='tanh') # (bs, 256, 256, 3)
-
-  concat = tf.keras.layers.Concatenate()
-
-  inputs = tf.keras.layers.Input(shape=[None,None,3])
-  x = inputs
-
-  # Downsampling through the model
-  skips = []
-  for down in down_stack:
-    x = down(x)
-    skips.append(x)
-
-  skips = reversed(skips[:-1])
-
-  # Upsampling and establishing the skip connections
-  for up, skip in zip(up_stack, skips):
-    x = up(x)
-    x = concat([x, skip])
-
-  x = last(x)
-
-  return tf.keras.Model(inputs=inputs, outputs=x)
 
 
 
 def Discriminator():
   initializer = tf.random_normal_initializer(0., 0.02)
 
-  inp = tf.keras.layers.Input(shape=[None, None, 3], name='input_image')
-  tar = tf.keras.layers.Input(shape=[None, None, 3], name='target_image')
+  inp = tf.keras.layers.Input(shape=[None, None, 2], name='input_image')
+  inpn = tf.keras.layers.GaussianNoise(0.2)(inp)
+  tar = tf.keras.layers.Input(shape=[None, None, 1], name='target_image')
 
-  x = tf.keras.layers.concatenate([inp, tar]) # (bs, 256, 256, channels*2)
+  x = tf.keras.layers.concatenate([inpn, tar]) # (bs, 256, 256, channels*2)
 
   down1 = downsample(64, 4, False)(x) # (bs, 128, 128, 64)
   down2 = downsample(128, 4)(down1) # (bs, 64, 64, 128)
