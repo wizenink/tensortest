@@ -1,11 +1,13 @@
 import tensorflow as tf
+from attention import SelfAttnModel
+from spectral import SpectralConv2D
 OUTPUT_CHANNELS = 2
 
 def downsample(filters,size,batchnorm = True):
     init = tf.random_normal_initializer(0.,0.02)
 
     result = tf.keras.Sequential()
-    result.add(tf.keras.layers.Conv2D(filters,size,strides=2,padding='same',kernel_initializer=init,use_bias=False))
+    result.add(SpectralConv2D(filters,size,strides=2,padding='same',use_bias=False))
 
     if batchnorm:
         result.add(tf.keras.layers.BatchNormalization())
@@ -20,7 +22,7 @@ def upsample(filters,size,dropout = False):
 
     result = tf.keras.Sequential()
 
-    result.add(tf.keras.layers.Conv2DTranspose(filters,size,strides=2,padding='same',kernel_initializer=init,use_bias=False))
+    result.add(tf.keras.layers.Conv2DTranspose(filters,size,strides=2,padding='same',use_bias=False))
     result.add(tf.keras.layers.BatchNormalization())
 
     if dropout:
@@ -46,15 +48,20 @@ def Generator():
         print("--Generator--")
         model.summary()
         '''
-        conditioning = tf.keras.layers.Input(shape=(None, None, 1))
+        init = tf.random_normal_initializer(0.,0.02)
+        conditioning = tf.keras.layers.Input(shape=(256, 256, 1))
+        #hid,att2 = SelfAttnModel(1)(conditioning)
         #noise = tf.keras.layers.Input(shape=(None,None,1))
         #hid = tf.keras.layers.Concatenate()([noise,conditioning])
-        hid = tf.keras.layers.Conv2D(8, (3, 3), activation='relu', padding='same')(conditioning)
-        hid = tf.keras.layers.Conv2D(16, (3, 3), activation='relu', padding='same')(hid)
-        hid = tf.keras.layers.Conv2D(32, (5, 5), activation='relu', padding='same')(hid)
-        hid = tf.keras.layers.Conv2D(32, (5, 5), activation='relu', padding='same')(hid)
-        hid = tf.keras.layers.Conv2D(32, (5, 5), activation='relu', padding='same')(hid)
-        hid =  tf.keras.layers.Conv2D(2, (11, 11), activation='tanh',padding='same')(hid)
+        hid = SpectralConv2D(2, (3, 3), activation='relu', padding='same')(conditioning)
+        hid = tf.keras.layers.BatchNormalization()(hid)
+        hid = SpectralConv2D(16, (3, 3), activation='relu', padding='same')(hid)
+        hid = tf.keras.layers.BatchNormalization()(hid)
+        hid = SpectralConv2D(16, (3, 3), activation='relu', padding='same')(hid)
+        hid = SpectralConv2D(16, (3, 3), activation='relu', padding='same')(hid)
+        #hid,att1 = SelfAttnModel(16)(hid)
+        hid = SpectralConv2D(2, (3, 3)  ,activation='relu', padding='same')(hid)
+        hid =  SpectralConv2D(2, (3, 3), activation='tanh',padding='same')(hid)
         model = tf.keras.Model(conditioning,hid)
         
         return model
@@ -66,13 +73,14 @@ def Discriminator():
   initializer = tf.random_normal_initializer(0., 0.02)
 
   inp = tf.keras.layers.Input(shape=[None, None, 2], name='input_image')
-  inpn = tf.keras.layers.GaussianNoise(0.2)(inp)
+  inpn = tf.keras.layers.GaussianNoise(0.1)(inp)
   tar = tf.keras.layers.Input(shape=[None, None, 1], name='target_image')
 
   x = tf.keras.layers.concatenate([inpn, tar]) # (bs, 256, 256, channels*2)
 
   down1 = downsample(64, 4, False)(x) # (bs, 128, 128, 64)
   down2 = downsample(128, 4)(down1) # (bs, 64, 64, 128)
+  #down2,att1 = SelfAttnModel(128)(down2)
   down3 = downsample(256, 4)(down2) # (bs, 32, 32, 256)
 
   zero_pad1 = tf.keras.layers.ZeroPadding2D()(down3) # (bs, 34, 34, 256)
@@ -85,9 +93,10 @@ def Discriminator():
   leaky_relu = tf.keras.layers.LeakyReLU()(batchnorm1)
 
   zero_pad2 = tf.keras.layers.ZeroPadding2D()(leaky_relu) # (bs, 33, 33, 512)
-
+  
   last = tf.keras.layers.Conv2D(1, 4, strides=1,
                                 kernel_initializer=initializer)(zero_pad2) # (bs, 30, 30, 1)
+
 
   return tf.keras.Model(inputs=[inp, tar], outputs=last)
 

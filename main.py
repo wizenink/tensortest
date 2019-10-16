@@ -45,9 +45,8 @@ def load(image_file):
     image = tf.cast(image,tf.float32)
     image = tf.divide(image,255.0)
     image = tf.image.rgb_to_yuv(image)  
-    image = tf.reshape(image,(IMG_WIDTH,IMG_HEIGHT,3))
 
-    #image = tf.image.random_flip_left_right(image)
+    image = tf.image.random_flip_left_right(image)
     #image = tf.image.random_flip_up_down(image)
     #channels = tf.unstack(image,axis=-1)
     #image = tf.stack([channels[2],channels[1],channels[0]],axis=-1)

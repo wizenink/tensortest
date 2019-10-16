@@ -1,0 +1,17 @@
+[paths]
+train_dataset = c:/lin/*/*.jpg
+test_dataset = c:/lin/*/*.jpg
+results = d:/tfgresults/results/
+plots = d:/tfgresults/plots/
+tb_logs = d:/tfgresults/tb_logs
+log_tag = spectral
+[training]
+epochs = 500
+batch_size = 8
+start_epoch = 0
+lr_generator = 2e-4
+lr_discriminator = 1e-5
+beta1_generator = 0.5
+beta1_discriminator = 0.5
+label_smoothing = 0.2
+discriminator_sigma1 = 0.2
