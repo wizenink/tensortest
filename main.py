@@ -72,7 +72,7 @@ train_dataset = train_dataset.batch(settings.config.getint('training','batch_siz
 test_dataset = tf.data.Dataset.list_files(settings.config['paths']['test_dataset'])
 #test_dataset = test_dataset.shuffle(BUFFER_SIZE)
 test_dataset = test_dataset.map(load,num_parallel_calls=tf.data.experimental.AUTOTUNE)
-test_dataset = test_dataset.batch(settings.config.getint('training','batch_size'))
+test_dataset = test_dataset.batch(1)
 
 
 logdir = os.path.join(settings.config.get('paths','tb_logs'),settings.config.get('paths','log_tag'))

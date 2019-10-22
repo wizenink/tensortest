@@ -7,7 +7,7 @@ def downsample(filters,size,batchnorm = True):
     init = tf.random_normal_initializer(0.,0.02)
 
     result = tf.keras.Sequential()
-    result.add(SpectralConv2D(filters,size,strides=2,padding='same',use_bias=False))
+    result.add(tf.keras.layers.Conv2D(filters,size,strides=2,padding='same',use_bias=False))
 
     if batchnorm:
         result.add(tf.keras.layers.BatchNormalization())
@@ -22,7 +22,7 @@ def upsample(filters,size,dropout = False):
 
     result = tf.keras.Sequential()
 
-    result.add(SpectralConv2DTranspose(filters,size,strides=2,padding='same',use_bias=False))
+    result.add(tf.keras.layers.Conv2DTranspose(filters,size,strides=2,padding='same',use_bias=False))
     result.add(tf.keras.layers.BatchNormalization())
 
     if dropout:
@@ -34,24 +34,19 @@ def upsample(filters,size,dropout = False):
 
 def Generator():
     down_stack = [
-        downsample(64, 4, batchnorm=False), # (bs, 128, 128, 64)
-        downsample(128, 4), # (bs, 64, 64, 128)
-        downsample(256, 4), # (bs, 32, 32, 256)
-        downsample(512, 4), # (bs, 16, 16, 512)
-        downsample(512, 4), # (bs, 8, 8, 512)
-        downsample(512, 4), # (bs, 4, 4, 512)
-        downsample(512, 4), # (bs, 2, 2, 512)
-        downsample(512, 4), # (bs, 1, 1, 512)
+        downsample(8, 3, batchnorm=False), # (bs, 128, 128, 64)
+        downsample(8, 3), # (bs, 64, 64, 128)
+        downsample(8, 3), # (bs, 32, 32, 256)
+        downsample(8, 3), # (bs, 16, 16, 512)
+        downsample(8, 3), # (bs, 8, 8, 512)
+        downsample(8, 3), # (bs, 4, 4, 512)
     ]
-
     up_stack = [
-        upsample(512, 4, dropout=True), # (bs, 2, 2, 1024)
-        upsample(512, 4, dropout=True), # (bs, 4, 4, 1024)
-        upsample(512, 4, dropout=True), # (bs, 8, 8, 1024)
-        upsample(512, 4), # (bs, 16, 16, 1024)
-        upsample(256, 4), # (bs, 32, 32, 512)
-        upsample(128, 4), # (bs, 64, 64, 256)
-        upsample(64, 4), # (bs, 128, 128, 128)
+        upsample(8, 3, dropout=True), # (bs, 2, 2, 1024)
+        upsample(8, 3, dropout=True), # (bs, 4, 4, 1024)
+        upsample(8, 3, dropout=True), # (bs, 8, 8, 1024)
+        upsample(8, 3), # (bs, 64, 64, 256)
+        upsample(8, 3), # (bs, 128, 128, 128)
     ]
 
     initializer = tf.random_normal_initializer(0., 0.02)
@@ -101,7 +96,6 @@ def Generator():
     
     return model
     '''
-
 
 
 
