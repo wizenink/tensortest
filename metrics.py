@@ -2,13 +2,13 @@ import tensorflow as tf
 import os
 import settings
 
-LAMBDA = 0
-LAMBDA2 = 0
+LAMBDA = 2
+LAMBDA2 = 2
 
-#loss_metric = tf.keras.losses.BinaryCrossentropy(from_logits=True,label_smoothing=0.2)
+loss_metric = tf.keras.losses.BinaryCrossentropy(from_logits=True,label_smoothing=0.2)
 
-def loss_metric(y_true, y_pred):
-    return tf.reduce_mean(y_true * y_pred) 
+#def loss_metric(y_true, y_pred):
+#    return tf.reduce_mean(y_true * y_pred) 
 
 checkpoint_dir = './checkpoints'
 checkpoint_prefix = os.path.join(checkpoint_dir,'cp')
@@ -17,7 +17,7 @@ checkpoint_prefix = os.path.join(checkpoint_dir,'cp')
 
 
 def disc_loss(y_true,y_pred):
-    real_loss = loss_metric(-1*tf.ones_like(y_true),y_true)
+    real_loss = loss_metric(tf.zeros_like(y_true),y_true)
 
     #Perform 1-sided label smoothing
     #labels = (0.8-1.0) * tf.random.uniform(y_true.shape) + 1.0
@@ -32,7 +32,7 @@ def disc_loss(y_true,y_pred):
 
 def gen_loss(disc_pred,gen_pred,target):
 
-    gan_loss = loss_metric(-1*tf.ones_like(disc_pred),disc_pred)
+    gan_loss = loss_metric(tf.zeros_like(disc_pred),disc_pred)
 
     l1_loss = tf.reduce_mean(tf.abs(target-gen_pred))
     l2_loss = tf.reduce_mean(tf.square(target-gen_pred))

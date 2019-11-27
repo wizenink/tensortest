@@ -1,6 +1,7 @@
 import tensorflow as tf
 from attention import SelfAttnModel
 from spectral import SpectralConv2D
+import pix2pix
 OUTPUT_CHANNELS = 2
 
 def downsample(filters,size,batchnorm = True):
@@ -101,5 +102,7 @@ def Discriminator():
   return tf.keras.Model(inputs=[inp, tar], outputs=last)
 
 
-generator = Generator()
-discriminator = Discriminator()
+#generator = Generator()
+#discriminator = Discriminator()
+generator = pix2pix.unet_generator(2,norm_type='instancenorm')
+discriminator = pix2pix.discriminator(norm_type='instancenorm',target=True)
