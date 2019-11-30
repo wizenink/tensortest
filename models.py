@@ -37,18 +37,19 @@ def Generator():
         '''
         conditioning = Input(shape=(None,None,self.G_INPUT_CHANNELS))
         input_layer = Input(shape=(None,None,1))
-        filters = 32
+        filters = 128
         c1 = self.addConvStep(input_layer,filters,conditioning)
-        filters = 32
+        filters = 256
         c2 = self.addConvStep(c1,filters,conditioning)
-        filters = 16
+        filters = 256
         c3 = self.addConvStep(c2,filters,conditioning)
+        filters = 256
+        c4 = self.addConvStep(c3,filters,conditioning)
         filters = 2
-        c4 = SeparableConv2D(filters,self.KERNEL_SIZE,padding='same',activation=customAct)(c3)
-        model = Model([input_layer,conditioning],c4)
-        print("--Generator--")
-        model.summary()
+        c5 = SeparableConv2D(filters,self.KERNEL_SIZE,padding='same',activation='tanh')(c3)
+        model = Model(input_layer,c5)
         '''
+        
         init = tf.random_normal_initializer(0.,0.02)
         conditioning = tf.keras.layers.Input(shape=(256, 256, 1))
         #hid,att2 = SelfAttnModel(1)(conditioning)
@@ -64,7 +65,6 @@ def Generator():
         hid = SpectralConv2D(2, (3, 3)  ,activation='relu', padding='same')(hid)
         hid =  SpectralConv2D(2, (3, 3), activation='tanh',padding='same')(hid)
         model = tf.keras.Model(conditioning,hid)
-        
         return model
 
 

@@ -280,7 +280,10 @@ def unet_generator(output_channels, norm_type='batchnorm'):
   concat = tf.keras.layers.Concatenate()
 
   inputs = tf.keras.layers.Input(shape=[None, None, 1])
-  x = inputs
+  conditioning = tf.keras.layers.Input(shape=[None,None,1])
+
+  x = tf.keras.layers.Concatenate()([inputs,conditioning])
+  #x = inputs
 
   # Downsampling through the model
   skips = []
@@ -297,7 +300,7 @@ def unet_generator(output_channels, norm_type='batchnorm'):
 
   x = last(x)
 
-  return tf.keras.Model(inputs=inputs, outputs=x)
+  return tf.keras.Model(inputs=[inputs,conditioning], outputs=x)
 
 
 def discriminator(norm_type='batchnorm', target=True):

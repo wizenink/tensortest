@@ -62,17 +62,24 @@ def load(image_file):
     return input_image,real_image
 
 
+all_dataset = tf.data.Dataset.list_files(settings.config['paths']['train_dataset'])
+#all_dataset = all_dataset.shuffle(BUFFER_SIZE)
+#all_dataset = all_dataset.map(load,num_parallel_calls=tf.data.experimental.AUTOTUNE)
+#all_dataset = all_dataset.batch(settings.config.getint('training','batch_size'))
 
 #train_dataset = tf.data.Dataset.list_files(PATH+'train/*/*.jpg')
-train_dataset = tf.data.Dataset.list_files(settings.config['paths']['train_dataset'])
+#train_dataset = tf.data.Dataset.list_files(settings.config['paths']['train_dataset'])
+train_dataset = all_dataset.skip(500)
 train_dataset = train_dataset.shuffle(BUFFER_SIZE)
 train_dataset = train_dataset.map(load,num_parallel_calls=tf.data.experimental.AUTOTUNE)
 train_dataset = train_dataset.batch(settings.config.getint('training','batch_size'))
-
-test_dataset = tf.data.Dataset.list_files(settings.config['paths']['test_dataset'])
-#test_dataset = test_dataset.shuffle(BUFFER_SIZE)
+train_dataset = train_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+#test_dataset = tf.data.Dataset.list_files(settings.config['paths']['test_dataset'])
+test_dataset = all_dataset.take(500)
+test_dataset = test_dataset.shuffle(BUFFER_SIZE)
 test_dataset = test_dataset.map(load,num_parallel_calls=tf.data.experimental.AUTOTUNE)
 test_dataset = test_dataset.batch(settings.config.getint('training','batch_size'))
+test_dataset = test_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
 
 logdir = os.path.join(settings.config.get('paths','tb_logs'),settings.config.get('paths','log_tag'))
