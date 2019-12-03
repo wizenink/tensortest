@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import tensorflow as tf
 
 import os
+os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '1'
 import configparser
 import time
 import matplotlib.pyplot as plt
