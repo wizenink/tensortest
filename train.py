@@ -123,6 +123,9 @@ def fit(ds,tds,epochs):
     d_loss_mean = []
     epochlist = []
     for epoch in range(start_epoch,epochs):
+        if (epoch % 10 ) == 0:
+            print("Saving model on epoch ",epoch)
+            tf.saved_model.save(generator,os.path.join(settings.config['paths']['savedmodel'],settings.config['paths']['log_tag']))
         start = time.time()
         g_losses = []
         d_losses = []
