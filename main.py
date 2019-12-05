@@ -4,6 +4,7 @@ import tensorflow as tf
 
 import os
 os.environ['TF_ENABLE_AUTO_MIXED_PRECISION'] = '1'
+tf.config.optimizer.set_jit(True)
 import configparser
 import time
 import matplotlib.pyplot as plt
@@ -45,6 +46,7 @@ def load(image_file):
     image = tf.image.decode_jpeg(image)
     image = tf.cast(image,tf.float32)
     image = tf.divide(image,255.0)
+    image = tf.image.resize_with_crop_or_pad(image,IMG_WIDTH,IMG_HEIGHT)
     image = tf.image.rgb_to_yuv(image)  
 
     image = tf.image.random_flip_left_right(image)
@@ -70,13 +72,13 @@ all_dataset = tf.data.Dataset.list_files(settings.config['paths']['train_dataset
 
 #train_dataset = tf.data.Dataset.list_files(PATH+'train/*/*.jpg')
 #train_dataset = tf.data.Dataset.list_files(settings.config['paths']['train_dataset'])
-train_dataset = all_dataset.skip(500)
+train_dataset = all_dataset.skip(1000)
 train_dataset = train_dataset.shuffle(BUFFER_SIZE)
 train_dataset = train_dataset.map(load,num_parallel_calls=tf.data.experimental.AUTOTUNE)
 train_dataset = train_dataset.batch(settings.config.getint('training','batch_size'))
 train_dataset = train_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 #test_dataset = tf.data.Dataset.list_files(settings.config['paths']['test_dataset'])
-test_dataset = all_dataset.take(500)
+test_dataset = all_dataset.take(1000)
 test_dataset = test_dataset.shuffle(BUFFER_SIZE)
 test_dataset = test_dataset.map(load,num_parallel_calls=tf.data.experimental.AUTOTUNE)
 test_dataset = test_dataset.batch(settings.config.getint('training','batch_size'))

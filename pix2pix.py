@@ -315,7 +315,9 @@ def discriminator(norm_type='batchnorm', target=True):
   initializer = tf.random_normal_initializer(0., 0.02)
 
   inp = tf.keras.layers.Input(shape=[None, None, 2], name='input_image')
-  x = inp
+  cond = tf.keras.layers.Input(shape=[None, None, 1], name='conditioning')
+
+  x = tf.keras.layers.concatenate([inp,cond])
 
   if target:
     tar = tf.keras.layers.Input(shape=[None, None, 1], name='target_image')
@@ -344,7 +346,7 @@ def discriminator(norm_type='batchnorm', target=True):
       kernel_initializer=initializer)(zero_pad2)  # (bs, 30, 30, 1)
 
   if target:
-    return tf.keras.Model(inputs=[inp, tar], outputs=last)
+    return tf.keras.Model(inputs=[inp,cond,tar], outputs=last)
   else:
     return tf.keras.Model(inputs=inp, outputs=last)
 

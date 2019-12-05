@@ -2,8 +2,8 @@ import tensorflow as tf
 import os
 import settings
 
-LAMBDA = 50
-LAMBDA2 = 50
+LAMBDA = 5
+LAMBDA2 = 5
 
 loss_metric = tf.keras.losses.BinaryCrossentropy(from_logits=True,label_smoothing=0.2)
 

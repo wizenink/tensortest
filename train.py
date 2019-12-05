@@ -82,15 +82,15 @@ def generate_plots(g_loss_mean,d_loss_mean,epochs):
     plt.plot(epochs,g_loss_mean,'g',label='Generator loss')
     plt.plot(epochs,d_loss_mean,'b',label='Discriminator loss')
     plt.savefig(settings.config['paths']['plots']+'losses.png')
-@tf.function
+@tf.function()
 def train_step(noise,input_image,target,generator_optimizer,discriminator_optimizer):
 
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
         
         gen_output = generator([input_image,noise],training=True)
 
-        disc_real = discriminator([input_image,target],training=True)
-        disc_gen = discriminator([input_image,gen_output],training=True)
+        disc_real = discriminator([input_image,noise,target],training=True)
+        disc_gen = discriminator([input_image,noise,gen_output],training=True)
         g_loss = gen_loss(disc_gen,gen_output,target)
         d_loss_fake,d_loss_real = disc_loss(disc_real,disc_gen)
 
