@@ -87,17 +87,23 @@ def train_step(noise,input_image,target,generator_optimizer,discriminator_optimi
 
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
         
-        gen_output = generator(input_image,training=True)
+        gen_output = generator(input_image,training=False)
 
         disc_real = discriminator([input_image,target],training=True)
         disc_gen = discriminator([input_image,gen_output],training=True)
-        g_loss = gen_loss(disc_gen,gen_output,target)
+
+        #g_loss = gen_loss(disc_gen,gen_output,target)
         d_loss_fake,d_loss_real = disc_loss(disc_real,disc_gen)
+        discriminator_gradients = disc_tape.gradient(d_loss_fake+d_loss_real,discriminator.trainable_variables)
+        discriminator_optimizer.apply_gradients(zip(discriminator_gradients,discriminator.trainable_variables))
+
+        disc_gen = discriminator([input_image,gen_output],training=False)
+        gen_output = generator(input_image,training=True)
+        g_loss = gen_loss(disc_gen,gen_output,target)
+        #d_loss_fake,d_loss_real = disc_loss(disc_real,disc_gen)
 
         generator_gradients = gen_tape.gradient(g_loss,generator.trainable_variables) 
-        discriminator_gradients = disc_tape.gradient(d_loss_fake+d_loss_real,discriminator.trainable_variables)
         generator_optimizer.apply_gradients(zip(generator_gradients,generator.trainable_variables))
-        discriminator_optimizer.apply_gradients(zip(discriminator_gradients,discriminator.trainable_variables))
         tf.summary.histogram("generator gradients",generator_gradients[0],step=discriminator_optimizer.iterations)
         tf.summary.histogram("discriminator_gradients",discriminator_gradients[0],step=discriminator_optimizer.iterations)
         return g_loss,d_loss_fake,d_loss_real
