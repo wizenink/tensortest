@@ -30,13 +30,13 @@ def disc_loss(y_true,y_pred):
     
     return pred_loss,real_loss
 
-def gen_loss(disc_pred,gen_pred,target):
+def gen_loss(gen_pred,target):
+    gan_loss = tf.keras.losses.mse(gen_pred,target)
+    #gan_loss = loss_metric(tf.zeros_like(disc_pred),disc_pred)
 
-    gan_loss = loss_metric(tf.zeros_like(disc_pred),disc_pred)
+    #l1_loss = tf.reduce_mean(tf.abs(target-gen_pred))
+    #l2_loss = tf.reduce_mean(tf.square(target-gen_pred))
 
-    l1_loss = tf.reduce_mean(tf.abs(target-gen_pred))
-    l2_loss = tf.reduce_mean(tf.square(target-gen_pred))
+    #total_loss = gan_loss + (LAMBDA * l1_loss + LAMBDA2 * l2_loss) 
 
-    total_loss = gan_loss + (LAMBDA * l1_loss + LAMBDA2 * l2_loss) 
-
-    return total_loss
+    return gan_loss
