@@ -36,7 +36,6 @@ def upsample(filters,size,dropout = False):
 def Generator():
         '''
         conditioning = Input(shape=(None,None,self.G_INPUT_CHANNELS))
-        input_layer = Input(shape=(None,None,1))
         filters = 32
         c1 = self.addConvStep(input_layer,filters,conditioning)
         filters = 32
@@ -50,10 +49,11 @@ def Generator():
         model.summary()
         '''
         init = tf.random_normal_initializer(0.,0.02)
-        conditioning = tf.keras.layers.Input(shape=(256, 256, 1))
+        noise = tf.keras.layers.Input(shape=(256, 256, 1))
+        conditioning = Input(shape=(256,256,1))
         #hid,att2 = SelfAttnModel(1)(conditioning)
         #noise = tf.keras.layers.Input(shape=(None,None,1))
-        #hid = tf.keras.layers.Concatenate()([noise,conditioning])
+        hid = tf.keras.layers.Concatenate()([noise,conditioning])
         hid = SpectralConv2D(2, (3, 3), activation='relu', padding='same')(conditioning)
         hid = tf.keras.layers.BatchNormalization()(hid)
         hid = SpectralConv2D(16, (3, 3), activation='relu', padding='same')(hid)

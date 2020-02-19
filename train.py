@@ -18,7 +18,7 @@ def generate_images(model, test_input, tar,epoch):
     # the accumulated statistics learned from the training dataset
     # (which we don't want)
     noise = tf.random.uniform([test_input.shape[0],256,256,1])
-    prediction = model(test_input, training=True)
+    prediction = model([noise,test_input], training=True)
     plt.imsave(f"results/image-at-epoch-{epoch}-u.png",prediction[0][:,:,0])
     plt.imsave(f"results/image-at-epoch-{epoch}-v.png",prediction[0][:,:,1])
     print(test_input[0].shape)
@@ -38,11 +38,11 @@ def generate_plots(g_loss_mean,d_loss_mean,epochs):
     plt.savefig(settings.config['paths']['plots']+'losses.png')
 
 @tf.function
-def train_step(noise,target,generator_optimizer):
+def train_step(noise,input_image,target,generator_optimizer):
 
     with tf.GradientTape() as gen_tape:
         
-        gen_output = generator(noise,training=True)
+        gen_output = generator([noise,input_image],training=True)
 
         g_loss = gen_loss(gen_output,target)
 
@@ -65,7 +65,7 @@ def fit(ds,tds,epochs):
         for input_image,target in ds:
             noise = tf.random.uniform([settings.config.getint('training','batch_size'),256,256,1])
             
-            g_loss = train_step(noise,target,generator_optimizer)
+            g_loss = train_step(noise,input_image,target,generator_optimizer)
             avg_g_loss.update_state(g_loss)
             if tf.equal(generator_optimizer.iterations % 10,0):
                 tf.summary.scalar('g_loss',avg_g_loss.result(),step=generator_optimizer.iterations)
